@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY-PDF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4c6ef5 0%, #6c5ce7 100%);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .text-area-container {
+            margin-bottom: 30px;
+        }
+
+        .text-area {
+            width: 100%;
+            min-height: 400px;
+            padding: 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .text-area:focus {
+            outline: none;
+            border-color: #4c6ef5;
+            box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.1);
+        }
+
+        .buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .ai-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .pdf-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 140px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-corriger {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+
+        .btn-resumer {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .btn-organiser {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .btn-imprimer {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .btn-telecharger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4c6ef5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .content {
+                padding: 20px 15px;
+            }
+
+            .text-area {
+                min-height: 300px;
+                padding: 15px;
+            }
+
+            .btn {
+                min-width: 120px;
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+
+            .buttons-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .ai-buttons, .pdf-buttons {
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MY-PDF</h1>
+        </div>
+        
+        <div class="content">
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+            
+            <div class="text-area-container">
+                <textarea 
+                    id="textArea" 
+                    class="text-area" 
+                    placeholder="Écrivez ou collez votre texte ici..."
+                ></textarea>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Traitement en cours...</p>
+            </div>
+
+            <div class="ai-buttons">
+                <button class="btn btn-corriger" onclick="processText('corriger')">
+                    Corriger
+                </button>
+                <button class="btn btn-resumer" onclick="processText('resumer')">
+                    Résumer
+                </button>
+                <button class="btn btn-organiser" onclick="processText('organiser')">
+                    Organiser
+                </button>
+            </div>
+
+            <div class="pdf-buttons">
+                <button class="btn btn-imprimer" onclick="printPDF()">
+                    Imprimer en PDF
+                </button>
+                <button class="btn btn-telecharger" onclick="downloadPDF()">
+                    Télécharger PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successElement = document.getElementById('successMessage');
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+            setTimeout(() => {
+                successElement.style.display = 'none';
+            }, 3000);
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            const buttons = document.querySelectorAll('.btn');
+            
+            if (show) {
+                loading.style.display = 'block';
+                buttons.forEach(btn => btn.disabled = true);
+            } else {
+                loading.style.display = 'none';
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        async function processText(action) {
+            const textArea = document.getElementById('textArea');
+            const text = textArea.value.trim();
+
+            if (!text) {
+                showError('Veuillez saisir du texte avant de continuer.');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const formData = new FormData();
+                formData.append('text', text);
+
+                const response = await fetch(`/${action}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `Erreur ${response.status}`);
+                }
+
+                const data = await response.json();
+                textArea.value = data.text;
+
+                let actionText = '';
+                switch(action) {
+                    case 'corriger':
+                        actionText = 'corrigé';
+                        break;
+                    case 'resumer':
+                        actionText = 'résumé';
+                        break;
+                    case 'organiser':
+                        actionText = 'organisé';
+                        break;
+                }
+                showSuccess(`Texte ${actionText} avec succès !`);
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError(`Erreur lors du traitement: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function generatePDF() {
+            const text = document.getElementById('textArea').value.trim();
+            
+            if (!text) {
+                showError('Aucun texte à convertir en PDF.');
+                return null;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            
+            // Configuration
+            const margin = 20;
+            const pageWidth = pdf.internal.pageSize.width;
+            const pageHeight = pdf.internal.pageSize.height;
+            const maxWidth = pageWidth - (margin * 2);
+            
+            // Titre
+            pdf.setFontSize(16);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('MY-PDF Document', margin, margin + 10);
+            
+            // Date
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            const date = new Date().toLocaleDateString('fr-FR');
+            pdf.text(`Généré le: ${date}`, margin, margin + 25);
+            
+            // Contenu
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'normal');
+            
+            // Diviser le texte en lignes
+            const lines = pdf.splitTextToSize(text, maxWidth);
+            let yPosition = margin + 45;
+            
+            lines.forEach((line) => {
+                if (yPosition > pageHeight - margin) {
+                    pdf.addPage();
+                    yPosition = margin + 10;
+                }
+                pdf.text(line, margin, yPosition);
+                yPosition += 7;
+            });
+            
+            return pdf;
+        }
+
+        function printPDF() {
+            try {
+                const pdf = generatePDF();
+                if (pdf) {
+                    pdf.autoPrint();
+                    window.open(pdf.output('bloburl'), '_blank');
+                    showSuccess('PDF généré pour impression !');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur lors de la génération du PDF pour impression.');
+            }
+        }
+
+        function downloadPDF() {
+            try {
+                const pdf = generatePDF();
+                if (pdf) {
+                    const date = new Date().toISOString().split('T')[0];
+                    pdf.save(`MY-PDF-Document-${date}.pdf`);
+                    showSuccess('PDF téléchargé avec succès !');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur lors du téléchargement du PDF.');
+            }
+        }
+
+        // Raccourcis clavier
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 's':
+                        e.preventDefault();
+                        downloadPDF();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        printPDF();
+                        break;
+                }
+            }
+        });
+
+        // Auto-save du contenu dans localStorage
+        const textArea = document.getElementById('textArea');
+        textArea.addEventListener('input', function() {
+            localStorage.setItem('myPdfText', this.value);
+        });
+
+        // Restaurer le contenu au chargement
+        window.addEventListener('load', function() {
+            const savedText = localStorage.getItem('myPdfText');
+            if (savedText) {
+                textArea.value = savedText;
+            }
+        });
+    </script>
+</body>
+</html>
