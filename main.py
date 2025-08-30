@@ -36,7 +36,7 @@ async def call_openai_api(prompt: str, system_message: str | None = None) -> str
     messages.append({"role": "user", "content": prompt})
     
     data = {
-        "model": "gpt-5",  # the newest OpenAI model is "gpt-5" which was released August 7, 2025
+        "model": "gpt-3.5-turbo",  # Using gpt-3.5-turbo for better compatibility
         "messages": messages,
         "max_tokens": 2000,
         "temperature": 0.7
