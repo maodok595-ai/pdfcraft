@@ -18,6 +18,13 @@ async def call_openai_api(prompt: str, system_message: str | None = None) -> str
     Uses gpt-5 as the newest OpenAI model (released August 7, 2025).
     Do not change this unless explicitly requested by the user.
     """
+    # Vérifier si la clé API est valide
+    if not OPENAI_API_KEY or OPENAI_API_KEY == "your_openai_api_key_here":
+        raise HTTPException(
+            status_code=400, 
+            detail="Clé API OpenAI manquante. Veuillez configurer votre clé API OpenAI pour utiliser les fonctionnalités IA."
+        )
+    
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json"
@@ -43,7 +50,12 @@ async def call_openai_api(prompt: str, system_message: str | None = None) -> str
                 json=data
             )
             
-            if response.status_code != 200:
+            if response.status_code == 401:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Clé API OpenAI invalide. Veuillez vérifier votre clé API."
+                )
+            elif response.status_code != 200:
                 raise HTTPException(
                     status_code=response.status_code,
                     detail=f"Erreur API OpenAI: {response.text}"
@@ -54,6 +66,8 @@ async def call_openai_api(prompt: str, system_message: str | None = None) -> str
             
     except httpx.TimeoutException:
         raise HTTPException(status_code=408, detail="Timeout lors de l'appel à l'API OpenAI")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors du traitement: {str(e)}")
 
