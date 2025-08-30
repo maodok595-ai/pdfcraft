@@ -55,10 +55,27 @@ async def call_openai_api(prompt: str, system_message: str | None = None) -> str
                     status_code=400,
                     detail="Clé API OpenAI invalide. Veuillez vérifier votre clé API."
                 )
+            elif response.status_code == 429:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Limite de requêtes atteinte. Votre clé API OpenAI a épuisé son quota ou ses crédits. Vérifiez votre compte OpenAI ou attendez avant de réessayer."
+                )
+            elif response.status_code == 402:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Quota épuisé. Votre clé API OpenAI n'a plus de crédit. Ajoutez du crédit à votre compte OpenAI."
+                )
             elif response.status_code != 200:
+                error_detail = f"Erreur API OpenAI (Code {response.status_code})"
+                try:
+                    error_json = response.json()
+                    if "error" in error_json and "message" in error_json["error"]:
+                        error_detail += f": {error_json['error']['message']}"
+                except:
+                    error_detail += f": {response.text[:200]}"
                 raise HTTPException(
                     status_code=response.status_code,
-                    detail=f"Erreur API OpenAI: {response.text}"
+                    detail=error_detail
                 )
             
             result = response.json()
