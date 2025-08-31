@@ -77,7 +77,7 @@
             margin-bottom: 20px;
         }
 
-        .ai-buttons, .manual-buttons {
+        .ai-buttons, .manual-buttons, .advanced-tools {
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
@@ -139,6 +139,10 @@
 
         .btn-manual {
             background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+
+        .btn-tools {
+            background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
         }
 
         .loading {
@@ -211,7 +215,7 @@
                 align-items: center;
             }
 
-            .ai-buttons, .manual-buttons, .pdf-buttons {
+            .ai-buttons, .manual-buttons, .advanced-tools, .pdf-buttons {
                 flex-direction: column;
                 align-items: center;
                 width: 100%;
@@ -277,6 +281,27 @@
                 </button>
                 <button class="btn btn-manual" onclick="formatText('clean')">
                     Nettoyer
+                </button>
+            </div>
+
+            <div class="advanced-tools">
+                <button class="btn btn-tools" onclick="textTools('count')">
+                    📊 Compter
+                </button>
+                <button class="btn btn-tools" onclick="textTools('reverse')">
+                    ↩️ Inverser
+                </button>
+                <button class="btn btn-tools" onclick="textTools('sort')">
+                    🔤 Trier
+                </button>
+                <button class="btn btn-tools" onclick="textTools('duplicates')">
+                    🚫 Doublons
+                </button>
+                <button class="btn btn-tools" onclick="textTools('replace')">
+                    🔄 Remplacer
+                </button>
+                <button class="btn btn-tools" onclick="textTools('extract')">
+                    📧 Extraire
                 </button>
             </div>
 
@@ -524,6 +549,94 @@
             };
             
             showSuccess(`Texte ${actionNames[action]} !`);
+        }
+
+        function textTools(action) {
+            const textArea = document.getElementById('textArea');
+            let text = textArea.value;
+
+            if (!text.trim() && action !== 'count') {
+                showError('Veuillez saisir du texte avant d\'utiliser cet outil.');
+                return;
+            }
+
+            let result = '';
+
+            switch(action) {
+                case 'count':
+                    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+                    const chars = text.length;
+                    const charsNoSpaces = text.replace(/\s/g, '').length;
+                    const lines = text.split('\n').length;
+                    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim()).length;
+                    
+                    alert(`📊 Statistiques du texte :\n\n` +
+                          `• Mots : ${words}\n` +
+                          `• Caractères : ${chars}\n` +
+                          `• Caractères (sans espaces) : ${charsNoSpaces}\n` +
+                          `• Lignes : ${lines}\n` +
+                          `• Paragraphes : ${paragraphs}`);
+                    return;
+
+                case 'reverse':
+                    const choice = confirm('Voulez-vous inverser les lignes ?\n\nOK = Inverser les lignes\nAnnuler = Inverser les caractères');
+                    if (choice) {
+                        // Inverser les lignes
+                        result = text.split('\n').reverse().join('\n');
+                    } else {
+                        // Inverser les caractères
+                        result = text.split('').reverse().join('');
+                    }
+                    break;
+
+                case 'sort':
+                    const lines = text.split('\n');
+                    result = lines.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())).join('\n');
+                    break;
+
+                case 'duplicates':
+                    const uniqueLines = [...new Set(text.split('\n'))];
+                    result = uniqueLines.join('\n');
+                    const removed = text.split('\n').length - uniqueLines.length;
+                    showSuccess(`${removed} ligne(s) dupliquée(s) supprimée(s) !`);
+                    break;
+
+                case 'replace':
+                    const searchText = prompt('Texte à rechercher :');
+                    if (!searchText) return;
+                    const replaceText = prompt('Remplacer par :') || '';
+                    const regex = new RegExp(searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                    result = text.replace(regex, replaceText);
+                    const matches = (text.match(regex) || []).length;
+                    showSuccess(`${matches} occurrence(s) remplacée(s) !`);
+                    break;
+
+                case 'extract':
+                    const emails = text.match(/[\w\.-]+@[\w\.-]+\.\w+/g) || [];
+                    const urls = text.match(/https?:\/\/[^\s]+/g) || [];
+                    const phones = text.match(/(\+\d{1,3}[-.\s]?)?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}/g) || [];
+                    
+                    let extractedText = '';
+                    if (emails.length > 0) extractedText += '📧 Emails :\n' + emails.join('\n') + '\n\n';
+                    if (urls.length > 0) extractedText += '🌐 URLs :\n' + urls.join('\n') + '\n\n';
+                    if (phones.length > 0) extractedText += '📞 Téléphones :\n' + phones.join('\n') + '\n\n';
+                    
+                    if (extractedText) {
+                        result = extractedText.trim();
+                        showSuccess(`${emails.length} email(s), ${urls.length} URL(s), ${phones.length} téléphone(s) extraits !`);
+                    } else {
+                        showError('Aucune donnée trouvée (emails, URLs, téléphones).');
+                        return;
+                    }
+                    break;
+
+                default:
+                    return;
+            }
+
+            if (result !== '' && action !== 'count') {
+                textArea.value = result;
+            }
         }
 
         // Auto-save du contenu dans localStorage
