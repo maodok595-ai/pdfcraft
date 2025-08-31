@@ -77,7 +77,7 @@
             margin-bottom: 20px;
         }
 
-        .ai-buttons {
+        .ai-buttons, .manual-buttons {
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
@@ -135,6 +135,10 @@
 
         .btn-telecharger {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .btn-manual {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
         }
 
         .loading {
@@ -207,7 +211,7 @@
                 align-items: center;
             }
 
-            .ai-buttons, .pdf-buttons {
+            .ai-buttons, .manual-buttons, .pdf-buttons {
                 flex-direction: column;
                 align-items: center;
                 width: 100%;
@@ -245,13 +249,34 @@
 
             <div class="ai-buttons">
                 <button class="btn btn-corriger" onclick="processText('corriger')">
-                    Corriger
+                    Corriger (IA)
                 </button>
                 <button class="btn btn-resumer" onclick="processText('resumer')">
-                    Résumer
+                    Résumer (IA)
                 </button>
                 <button class="btn btn-organiser" onclick="processText('organiser')">
-                    Organiser
+                    Organiser (IA)
+                </button>
+            </div>
+
+            <div class="manual-buttons">
+                <button class="btn btn-manual" onclick="formatText('uppercase')">
+                    MAJUSCULES
+                </button>
+                <button class="btn btn-manual" onclick="formatText('lowercase')">
+                    minuscules
+                </button>
+                <button class="btn btn-manual" onclick="formatText('capitalize')">
+                    Titre
+                </button>
+                <button class="btn btn-manual" onclick="formatText('bullets')">
+                    • Puces
+                </button>
+                <button class="btn btn-manual" onclick="formatText('numbers')">
+                    1. Numéros
+                </button>
+                <button class="btn btn-manual" onclick="formatText('clean')">
+                    Nettoyer
                 </button>
             </div>
 
@@ -439,6 +464,67 @@
                 }
             }
         });
+
+        function formatText(action) {
+            const textArea = document.getElementById('textArea');
+            let text = textArea.value.trim();
+
+            if (!text) {
+                showError('Veuillez saisir du texte avant de le formater.');
+                return;
+            }
+
+            let formattedText = '';
+
+            switch(action) {
+                case 'uppercase':
+                    formattedText = text.toUpperCase();
+                    break;
+                case 'lowercase':
+                    formattedText = text.toLowerCase();
+                    break;
+                case 'capitalize':
+                    formattedText = text.replace(/\w\S*/g, (txt) => 
+                        txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                    );
+                    break;
+                case 'bullets':
+                    const bulletLines = text.split('\n').filter(line => line.trim() !== '');
+                    formattedText = bulletLines.map(line => '• ' + line.trim()).join('\n');
+                    break;
+                case 'numbers':
+                    const numberLines = text.split('\n').filter(line => line.trim() !== '');
+                    formattedText = numberLines.map((line, index) => 
+                        (index + 1) + '. ' + line.trim()
+                    ).join('\n');
+                    break;
+                case 'clean':
+                    // Supprimer les espaces multiples et organiser les paragraphes
+                    formattedText = text
+                        .replace(/[ ]+/g, ' ')  // Espaces multiples
+                        .replace(/\n{3,}/g, '\n\n')  // Lignes vides multiples
+                        .replace(/^\s+|\s+$/g, '')  // Espaces début/fin
+                        .split('\n')
+                        .map(line => line.trim())
+                        .join('\n');
+                    break;
+                default:
+                    return;
+            }
+
+            textArea.value = formattedText;
+            
+            const actionNames = {
+                'uppercase': 'converti en majuscules',
+                'lowercase': 'converti en minuscules',
+                'capitalize': 'formaté en titre',
+                'bullets': 'organisé avec puces',
+                'numbers': 'numéroté',
+                'clean': 'nettoyé et organisé'
+            };
+            
+            showSuccess(`Texte ${actionNames[action]} !`);
+        }
 
         // Auto-save du contenu dans localStorage
         const textArea = document.getElementById('textArea');
