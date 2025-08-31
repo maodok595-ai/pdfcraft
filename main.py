@@ -4,9 +4,36 @@ from fastapi import FastAPI, Request, Form, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse
 import httpx
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text
+from sqlalchemy.orm import declarative_base, sessionmaker
+from datetime import datetime
 
 app = FastAPI(title="MY-PDF")
 templates = Jinja2Templates(directory="templates")
+
+# Configuration de la base de données
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    engine = create_engine(DATABASE_URL)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base = declarative_base()
+
+    # Modèle pour stocker les textes traités
+    class ProcessedText(Base):
+        __tablename__ = "processed_texts"
+        
+        id = Column(Integer, primary_key=True, index=True)
+        original_text = Column(Text, nullable=False)
+        processed_text = Column(Text, nullable=False)
+        action = Column(String(50), nullable=False)  # corriger, resumer, organiser
+        created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Créer les tables
+    Base.metadata.create_all(bind=engine)
+else:
+    # Pas de base de données configurée
+    engine = None
+    SessionLocal = None
 
 # OpenAI API configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "your_openai_api_key_here")
@@ -79,7 +106,25 @@ async def call_openai_api(prompt: str, system_message: str | None = None) -> str
                 )
             
             result = response.json()
-            return result["choices"][0]["message"]["content"].strip()
+            processed_text = result["choices"][0]["message"]["content"].strip()
+            
+            # Sauvegarder dans la base de données si disponible
+            if SessionLocal:
+                try:
+                    db = SessionLocal()
+                    db_text = ProcessedText(
+                        original_text=prompt,
+                        processed_text=processed_text,
+                        action=system_message[:50] if system_message else "unknown"
+                    )
+                    db.add(db_text)
+                    db.commit()
+                    db.close()
+                except Exception as db_error:
+                    print(f"Erreur base de données: {db_error}")
+                    # Continue même si la sauvegarde échoue
+            
+            return processed_text
             
     except httpx.TimeoutException:
         raise HTTPException(status_code=408, detail="Timeout lors de l'appel à l'API OpenAI")
