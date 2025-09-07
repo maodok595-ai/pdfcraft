@@ -1,0 +1,11 @@
+service
+  - type: web
+    name: pdfcraft
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: SECRET_KEY
+        value: etude-line-production-secret-key-2024-maodo-ka
+      - key: PORT
+        value: 10000
